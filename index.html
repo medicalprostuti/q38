@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "উত্তল লেন্স কেমন হতে পারে না?",
+          options: {
+            a: "Concavo-convex",
+            b: "Cylindrical",
+            c: "Plano-convex",
+            d: "Bi-convex",
+          },
+          correct: "b",
+          explanation:
+            "<p>উত্তল লেন্স বিভিন্ন ধরনের হতে পারে, যেমন: উভোত্তল (Bi-convex), সমতলোত্তল (Plano-convex) এবং অবতলাবতল (Concavo-convex) বা উত্তলাবতল (Meniscus convex)। তবে সিলিন্ড্রিক্যাল লেন্স মূলত টরিক লেন্সের একটি বিশেষ রূপ, যা সাধারণত অ্যাস্টিগম্যাটিজম নামক দৃষ্টি ত্রুটি সংশোধনের জন্য ব্যবহৃত হয়। এটি একটি উত্তল লেন্সের প্রকারভেদ নয়, বরং এটি একটি ভিন্ন আকৃতির লেন্স যা এক তলে বক্রতা এবং অন্য তলে সমতল বা ভিন্ন বক্রতা ধারণ করে।</p>",
+        },
+        {
+          id: 2,
+          question: "চশমার লেন্স ব্যবহারের ক্ষেত্রে কোন জোড়াটি সঠিক নয়?",
+          options: {
+            a: "মায়োপিয়া-অবতল লেন্স",
+            b: "প্রেসবায়োপিয়া-সিলিন্ড্রিক্যাল লেন্স",
+            c: "হাইপারমেট্রোপিয়া-উত্তল লেন্স",
+            d: "অ্যাসটিগমেটিজম-সিলিন্ড্রিক্যাল লেন্স",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রেসবায়োপিয়া বা চালশে দূর করার জন্য সাধারণত দ্বি-ফোকাস বা প্রগ্রেসিভ লেন্স ব্যবহার করা হয়, যেখানে দূর ও নিকট উভয় দৃষ্টির জন্য ক্ষমতা থাকে। সিলিন্ড্রিক্যাল লেন্স মূলত অ্যাস্টিগম্যাটিজম (বিষমদৃষ্টি) ত্রুটি দূরীকরণে ব্যবহৃত হয়, যেখানে চোখের কর্নিয়া বা লেন্সের বক্রতা অসমান থাকে। তাই প্রেসবায়োপিয়ার সাথে সিলিন্ড্রিক্যাল লেন্সের ব্যবহার সঠিক জোড়া নয়।</p>",
+        },
+        {
+          id: 3,
+          question: "+4 ডায়পটার লেন্সের ক্ষেত্রে কোনটি সঠিক?",
+          options: {
+            a: "উত্তল লেন্স, f = +25 cm",
+            b: "অবতল লেন্স, f = -25 cm",
+            c: "উত্তল লেন্স, f = +25 m",
+            d: "উত্তল লেন্স, f = +25 cm",
+          },
+          correct: "a",
+          explanation:
+            "<p>লেন্সের ক্ষমতা (P) এবং ফোকাস দূরত্ব (f) এর মধ্যে সম্পর্ক হলো P = 1/f। এখানে ক্ষমতা +4 ডায়পটার দেওয়া আছে, যা ধনাত্মক। ধনাত্মক ক্ষমতা উত্তল লেন্সের ক্ষেত্রে হয়। এখন ফোকাস দূরত্ব বের করতে হলে: f = 1/P = 1/4 মিটার = 0.25 মিটার। যেহেতু 1 মিটার = 100 সেন্টিমিটার, সেহেতু 0.25 মিটার = 25 সেন্টিমিটার। সুতরাং, সঠিক উত্তর হলো (A) উত্তল লেন্স, f = +25 cm।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "উত্তলাবতল ও অবতলোত্তল লেন্সের আলোক কেন্দ্রের অবস্থান কোথায়?",
+          options: {
+            a: "লেন্সের ভিতরে",
+            b: "বক্রতলের মেরুতে",
+            c: "লেন্সের বাইরে",
+            d: "লেন্সের ভিতর মধ্য বিন্দুতে",
+          },
+          correct: "c",
+          explanation:
+            "<p>উত্তলাবতল (Concavo-convex) এবং অবতলোত্তল (Convexo-concave) লেন্সের ক্ষেত্রে, তাদের বিশেষ জ্যামিতিক গঠনের কারণে আলোক কেন্দ্র লেন্সের বাইরেও থাকতে পারে। এটি লেন্সের বক্রতার ব্যাসার্ধ এবং প্রতিসরাঙ্কের উপর নির্ভর করে। কিছু ক্ষেত্রে, আলোক রশ্মি লেন্সের মধ্য দিয়ে এমনভাবে যায় যে তাদের আপতিত ও নির্গত রশ্মি পরস্পর সমান্তরাল থাকে, এবং এই সমান্তরাল রশ্মিগুলোর সংযোগস্থল লেন্সের বাইরে অবস্থিত হতে পারে।</p>",
+        },
+        {
+          id: 5,
+          question: "আলো ও লেন্স সম্পর্কে নিচের কোন তথ্যটি সঠিক নয়?",
+          options: {
+            a: "সমোত্তল ও সমাবতল লেন্সের আলোক কেন্দ্রের অবস্থান লেন্সের অভ্যন্তরে মধ্য বিন্দুতে থাকে।",
+            b: "আলো অসংখ্য ক্ষুদ্র কণা বা ফোটনের সমষ্টি।",
+            c: "অবতল ও উত্তল উভয় দর্পণের ক্ষেত্রে, ফোকাস দূরত্ব (f) বক্রতার ব্যাসার্ধের (R) সমান হয়।",
+            d: "আলো এক প্রকার তড়িৎচুম্বকীয় তরঙ্গ।",
+          },
+          correct: "c",
+          explanation:
+            "তুমি জানো যে, দর্পণের ক্ষেত্রে, ফোকাস দূরত্ব (f) বক্রতার ব্যাসার্ধের (R) অর্ধেক হয়। এর মানে হলো, f = R/2। এই সম্পর্কটি অবতল এবং উত্তল উভয় দর্পণের জন্যই সত্যি। কিন্তু অপশন 'c'-তে বলা হয়েছে ফোকাস দূরত্ব বক্রতার ব্যাসার্ধের সমান হয়, যা সঠিক নয়। বাকি অপশনগুলো আলো ও লেন্স সম্পর্কে সঠিক তথ্য দিচ্ছে।",
+        },
+        {
+          id: 6,
+          question:
+            "প্রতিবিম্বের অবস্থান: বক্রতার কেন্দ্রে, প্রকৃতি: বাস্তব এবং উল্টা, বিবর্ধন: 1। অবতল দর্পণে বস্তুর যে অবস্থায় উপরেরগুলি সত্য-",
+          options: {
+            a: "বস্তু বক্রতার কেন্দ্র ও অসীমের মধ্যে অবস্থিত",
+            b: "বস্তু প্রধান ফোকাস এবং বক্রতার কেন্দ্রের মধ্যে অবস্থিত",
+            c: "বস্তু বক্রতার কেন্দ্রে অবস্থিত",
+            d: "বস্তু অসীম দূরত্বে অবস্থিত",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবতল দর্পণের ক্ষেত্রে, যখন বস্তুকে বক্রতার কেন্দ্রে (C) স্থাপন করা হয়, তখন তার প্রতিবিম্বও বক্রতার কেন্দ্রেই গঠিত হয়। এই প্রতিবিম্ব বাস্তব, উল্টা এবং বস্তুর সমান আকারের হয়, যার ফলে বিবর্ধন 1 হয়। এটি অবতল দর্পণের প্রতিবিম্ব গঠনের একটি বিশেষ অবস্থা।</p>",
+        },
+        {
+          id: 7,
+          question: "নিম্নের কোনটি বাস্তব বিম্বের জন্য সঠিক?",
+          options: {
+            a: "চোখে দেখা যায় কিন্তু পর্দায় ফেলা যায় না",
+            b: "বিম্বটি খাড়া ও বাস্তব",
+            c: "সব রকম দর্পণ ও লেন্সে উৎপন্ন হয়",
+            d: "উত্তল লেন্স বাস্তব বিম্ব তৈরি করে",
+          },
+          correct: "d",
+          explanation:
+            "<p>বাস্তব বিম্ব হলো আলোক রশ্মির প্রকৃত ছেদনের ফলে গঠিত প্রতিবিম্ব, যা পর্দায় ফেলা যায় এবং সাধারণত উল্টা হয়। উত্তল লেন্স যখন বস্তুকে তার ফোকাস দূরত্বের বাইরে রাখা হয়, তখন বাস্তব ও উল্টা প্রতিবিম্ব তৈরি করে। অপশন (A) ও (B) বাস্তব বিম্বের বৈশিষ্ট্য নয়। অপশন (C) ভুল, কারণ অবতল লেন্স সর্বদা অবাস্তব বিম্ব তৈরি করে।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "নিম্নের কোন লেন্সটি স্বল্প দৃষ্টি প্রতিকারের জন্য ব্যবহার করা হয়?",
+          options: {
+            a: "উত্তল অবতল",
+            b: "সমতল",
+            c: "উত্তল",
+            d: "অবতল",
+          },
+          correct: "d",
+          explanation:
+            "<p>স্বল্প দৃষ্টি বা মায়োপিয়া দূরীকরণে অবতল লেন্স ব্যবহার করা হয়। মায়োপিয়ায় দূরের বস্তু ঝাপসা দেখায় কারণ আলোক রশ্মি রেটিনার সামনে ফোকাস হয়। অবতল লেন্স এই আলোক রশ্মিগুলোকে ছড়িয়ে দেয়, যাতে তারা রেটিনার উপর সঠিকভাবে ফোকাস করতে পারে এবং রোগী স্পষ্ট দেখতে পায়।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "F ফোকাস দূরত্ববিশিষ্ট দুটি উত্তল লেন্সকে পরস্পরের সংস্পর্শে রাখলে তুল্য ফোকাস দূরত্ব কত হবে?",
+          options: {
+            a: "শূন্য",
+            b: "2F",
+            c: "F/2",
+            d: "F",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুটি লেন্সকে পরস্পরের সংস্পর্শে রাখলে তাদের তুল্য ক্ষমতা (P<sub>eq</sub>) হয় লেন্সগুলোর ক্ষমতার যোগফল, অর্থাৎ P<sub>eq</sub> = P₁ + P₂। আমরা জানি, ক্ষমতা P = 1/f। এখানে, প্রতিটি লেন্সের ফোকাস দূরত্ব F, তাই প্রতিটি লেন্সের ক্ষমতা P = 1/F। সুতরাং, তুল্য ক্ষমতা P<sub>eq</sub> = 1/F + 1/F = 2/F। তুল্য ফোকাস দূরত্ব (f<sub>eq</sub>) হবে f<sub>eq</sub> = 1/P<sub>eq</sub> = 1/(2/F) = F/2।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "উত্তল লেন্সের ক্ষেত্রে যখন 0 < u < f হয়, তখন প্রতিবিম্বের অবস্থান কোনটি সত্য?",
+          options: {
+            a: "2f > |v| > f (আবাসি)",
+            b: "∞ > v > 2f (বাস্তব)",
+            c: "v = f (অসীমে)",
+            d: "v = 2f (2f এ)",
+          },
+          correct: "a",
+          explanation:
+            "উত্তল লেন্সের ক্ষেত্রে, যখন বস্তুকে আলোক কেন্দ্র (0) এবং প্রধান ফোকাস (f) এর মধ্যে রাখা হয়, অর্থাৎ 0 < u < f হয়, তখন একটি অবাস্তব, সোজা এবং বিবর্ধিত প্রতিবিম্ব লেন্সের যে পাশে বস্তু আছে সেই পাশেই গঠিত হয়। এই প্রতিবিম্বের দূরত্ব, |v|, 2f এর চেয়ে ছোট কিন্তু f এর চেয়ে বড় হয়, অর্থাৎ 2f > |v| > f। এখানে |v| দিয়ে অবাস্তব প্রতিবিম্বের দূরত্ব বোঝানো হয়েছে। বাকি অপশনগুলো এই অবস্থার জন্য সঠিক নয়।",
+        },
+        {
+          id: 11,
+          question: "লেন্সের বক্রতার কেন্দ্রদ্বয়ের সংযোজক সরলরেখাকে বলে-",
+          options: {
+            a: "উন্মেষ",
+            b: "প্রধান ছেদ",
+            c: "ফোকাস দূরত্ব",
+            d: "প্রধান অক্ষ",
+          },
+          correct: "d",
+          explanation:
+            "<p>লেন্স দুটি গোলীয় পৃষ্ঠ দ্বারা গঠিত হয়, এবং এই দুটি পৃষ্ঠের নিজস্ব বক্রতার কেন্দ্র থাকে। এই দুটি বক্রতার কেন্দ্রকে সংযুক্তকারী সরলরেখাকে লেন্সের প্রধান অক্ষ (Principal Axis) বলা হয়। এটি লেন্সের জ্যামিতিক কেন্দ্র এবং ফোকাস বিন্দুর মধ্য দিয়ে যায় এবং লেন্সের কার্যকারিতায় গুরুত্বপূর্ণ ভূমিকা পালন করে।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "উত্তল লেন্সের ফোকাস দূরত্ব f এবং বস্তুর দূরত্ব u-এর সম্পর্ক কীরূপ হলে সদ এবং বিবর্ধিত প্রতিবিম্ব গঠিত হবে?",
+          options: {
+            a: "f < u < 2f",
+            b: "u = 2f",
+            c: "u > 2f",
+            d: "u < f",
+          },
+          correct: "a",
+          explanation:
+            "<p>উত্তল লেন্সে সদ (বাস্তব) এবং বিবর্ধিত প্রতিবিম্ব গঠিত হওয়ার জন্য বস্তুকে ফোকাস দূরত্ব (f) এবং বক্রতার কেন্দ্র (2f) এর মধ্যে স্থাপন করতে হয়। অর্থাৎ, বস্তুর দূরত্ব (u) f এর চেয়ে বেশি এবং 2f এর চেয়ে কম হতে হবে (f < u < 2f)। এই অবস্থায় প্রতিবিম্ব লেন্সের অন্য পাশে 2f এর বাইরে গঠিত হয় এবং সেটি বাস্তব, উল্টা ও বিবর্ধিত হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "একটি লেন্সের ক্ষমতা 1 dioptre হলে এর ফোকাস দৈর্ঘ্য কত?",
+          options: {
+            a: "1 cm",
+            b: "1 m",
+            c: "-1 cm",
+            d: "-1 m",
+          },
+          correct: "b",
+          explanation:
+            "<p>লেন্সের ক্ষমতা (P) এবং ফোকাস দৈর্ঘ্য (f) এর মধ্যে সম্পর্ক হলো P = 1/f, যেখানে f মিটার এককে প্রকাশিত হয়। যদি ক্ষমতা 1 ডায়পটার (D) হয়, তাহলে f = 1/P = 1/1 মিটার = 1 মিটার। সুতরাং, 1 ডায়পটার ক্ষমতার লেন্সের ফোকাস দৈর্ঘ্য 1 মিটার।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "একটি সমতলোত্তল লেন্স কাচের (μ = 1.5) তৈরি। এর ফোকাস দূরত্ব এবং বক্রতার ব্যাসার্ধের মধ্যে সম্পর্ক হলো-",
+          options: {
+            a: "f = R/2",
+            b: "f = R",
+            c: "f = 2R",
+            d: "f = 3R/2",
+          },
+          correct: "c",
+          explanation:
+            "<p>লেন্স প্রস্তুতকারক সমীকরণ হলো 1/f = (μ - 1)(1/R₁ - 1/R₂)। একটি সমতলোত্তল লেন্সের ক্ষেত্রে, একটি পৃষ্ঠ সমতল, তাই R₁ = ∞। অপর পৃষ্ঠের বক্রতার ব্যাসার্ধ R ধরা যাক। যেহেতু এটি উত্তল পৃষ্ঠ, তাই R₂ = -R (চিহ্ন প্রথা অনুসারে)। তাহলে, 1/f = (μ - 1)(1/∞ - 1/(-R)) = (μ - 1)(0 + 1/R) = (μ - 1)/R। যদি μ = 1.5 হয়, তাহলে 1/f = (1.5 - 1)/R = 0.5/R = 1/(2R)। সুতরাং, f = 2R।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "একটি অবতল লেন্সে ফোকাস বিন্দুতে বস্তু রাখলে প্রতিবিম্ব গঠিত হবে-",
+          options: {
+            a: "অসীমে",
+            b: "প্রধান অক্ষের ওপর আলোক কেন্দ্র ও ফোকাসের মধ্যে",
+            c: "আলোক কেন্দ্রে",
+            d: "ফোকাসে",
+          },
+          correct: "b",
+          explanation:
+            "<p>অবতল লেন্সে সর্বদা অবাস্তব, সোজা এবং খর্বিত প্রতিবিম্ব গঠিত হয়, বস্তুর অবস্থান যেখানেই হোক না কেন। যখন বস্তুকে ফোকাস বিন্দুতে রাখা হয়, তখন প্রতিবিম্ব প্রধান অক্ষের উপর আলোক কেন্দ্র (O) এবং ফোকাস (F) এর মধ্যে গঠিত হয়। এই প্রতিবিম্ব লেন্সের যে পাশে বস্তু থাকে, সেই পাশেই গঠিত হয়।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "একটি বস্তু অবতল লেন্স থেকে u দূরত্বে থাকলে বস্তুটির একটি সদবিম্ব কী শর্তে গঠিত হবে?",
+          options: {
+            a: "u = 0",
+            b: "0 < u < ∞",
+            c: "u < 0 এবং |u| < |f|",
+            d: "কোনো শর্তেই সদবিম্ব গঠিত হবে না",
+          },
+          correct: "d",
+          explanation:
+            "<p>অবতল লেন্সের ক্ষেত্রে, বস্তুর অবস্থান যাই হোক না কেন, এটি সর্বদা অবাস্তব, সোজা এবং খর্বিত প্রতিবিম্ব তৈরি করে। অবতল লেন্সে কখনোই বাস্তব (সদ) প্রতিবিম্ব গঠিত হয় না। বাস্তব প্রতিবিম্ব গঠিত হওয়ার জন্য আলোক রশ্মিগুলোকে কোনো একটি বিন্দুতে মিলিত হতে হয়, কিন্তু অবতল লেন্স আলোক রশ্মিকে অপসারিত করে।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "একটি উত্তল লেন্সের ফোকাস দূরত্ব f। কোনো বস্তু লেন্সটি থেকে u দূরত্বে থাকলে, বস্তুটির সমান আকারের একটি অবাস্তব প্রতিবিম্ব কী শর্তে গঠিত হবে?",
+          options: {
+            a: "u = 2f",
+            b: "u > 2f",
+            c: "f < u < 2f",
+            d: "u < f",
+          },
+          correct: "a",
+          explanation:
+            "<p>উত্তল লেন্সের ক্ষেত্রে, বস্তুর সমান আকারের প্রতিবিম্ব তৈরি হয় যখন বস্তুকে বক্রতার কেন্দ্রে (2f) রাখা হয়। তবে, এই প্রতিবিম্ব বাস্তব এবং উল্টা হয়। অবাস্তব এবং সমান আকারের প্রতিবিম্ব উত্তল লেন্সে গঠিত হয় না। প্রশ্নে 'সমান আকারের একটি অবাস্তব প্রতিবিম্ব' বলা হয়েছে যা উত্তল লেন্সের বৈশিষ্ট্য নয়। উত্তল লেন্সে অবাস্তব বিম্ব গঠিত হয় যখন u < f হয়, কিন্তু তখন প্রতিবিম্ব বিবর্ধিত হয়, সমান আকারের হয় না। এখানে প্রদত্ত উত্তর (a)u=2f অনুযায়ী, প্রতিবিম্ব বাস্তব ও সমান আকারের হয়, অবাস্তব নয়। সম্ভবত প্রশ্নে বা উত্তরে অসঙ্গতি রয়েছে।</p>",
+        },
+        {
+          id: 18,
+          question: "সমোত্তল ও সমাবতল লেন্সে আলোক কেন্দ্রের অবস্থান কোথায়?",
+          options: {
+            a: "লেন্সের ভেতর",
+            b: "বক্রতলের মেরুতে",
+            c: "লেন্সের বাইরে",
+            d: "লেন্সের ভেতরে মধ্য বিন্দুতে",
+          },
+          correct: "d",
+          explanation:
+            "<p>সমোত্তল (Bi-convex) এবং সমাবতল (Bi-concave) লেন্সের ক্ষেত্রে, উভয় পৃষ্ঠের বক্রতার ব্যাসার্ধ সমান হওয়ায় এবং লেন্সের জ্যামিতিক প্রতিসাম্যতা থাকায়, আলোক কেন্দ্র লেন্সের অভ্যন্তরে ঠিক মধ্য বিন্দুতে অবস্থিত হয়। এই বিন্দু দিয়ে অতিক্রমকারী আলোক রশ্মি কোনো প্রকার বিচ্যুতি ছাড়াই সোজা চলে যায়।</p>",
+        },
+        {
+          id: 19,
+          question: "নিচের কোনটি লেন্স প্রস্তুতকারক সমীকরণ?",
+          options: {
+            a: "1/f = (μ - 1)(1/R₁ - 1/R₂)",
+            b: "1/f = (μ + 1)(1/R₁ + 1/R₂)",
+            c: "1/f = μ(1/R₁ - 1/R₂)",
+            d: "1/f = (μ - 1)(1/R₁ + 1/R₂)",
+          },
+          correct: "a",
+          explanation:
+            "<p>লেন্স প্রস্তুতকারক সমীকরণ (Lens Maker's Formula) হলো 1/f = (μ - 1)(1/R₁ - 1/R₂)। এখানে f হলো লেন্সের ফোকাস দূরত্ব, μ হলো লেন্সের উপাদানের প্রতিসরাঙ্ক, R₁ হলো প্রথম পৃষ্ঠের বক্রতার ব্যাসার্ধ এবং R₂ হলো দ্বিতীয় পৃষ্ঠের বক্রতার ব্যাসার্ধ। এই সমীকরণটি লেন্সের বক্রতা, প্রতিসরাঙ্ক এবং ফোকাস দূরত্বের মধ্যে সম্পর্ক স্থাপন করে।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "একটি দ্বি-উত্তল লেন্স দ্বারা অবাস্তব বিম্ব সৃষ্টি করতে হলে লক্ষ্যবস্তু কোথায় রাখতে হবে?",
+          options: {
+            a: "লেন্স এবং ফোকাসের মধ্যবর্তী স্থানে",
+            b: "ফোকাসে",
+            c: "2f দূরত্বে",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি দ্বি-উত্তল লেন্স (উত্তল লেন্স) দ্বারা অবাস্তব এবং সোজা বিম্ব সৃষ্টি করতে হলে লক্ষ্যবস্তুকে লেন্সের আলোক কেন্দ্র (O) এবং প্রধান ফোকাস (F) এর মধ্যবর্তী স্থানে স্থাপন করতে হবে। এই অবস্থায়, প্রতিবিম্ব বস্তুর মতোই লেন্সের একই পাশে, কিন্তু বিবর্ধিত আকারে গঠিত হয়।</p>",
+        },
+        {
+          id: 21,
+          question: "লেন্সের ক্ষমতার মাত্রা কোনটি?",
+          options: {
+            a: "[ML²T⁻²]",
+            b: "[L⁻¹]",
+            c: "[L⁻²]",
+            d: "[ML]",
+          },
+          correct: "b",
+          explanation:
+            "<p>লেন্সের ক্ষমতাকে ফোকাস দূরত্বের বিপরীত রাশি হিসেবে সংজ্ঞায়িত করা হয়, অর্থাৎ P = 1/f। ফোকাস দূরত্ব একটি দৈর্ঘ্যের একক (যেমন মিটার), তাই এর মাত্রা [L] হয়। সুতরাং, ক্ষমতার মাত্রা হবে [1/L] বা [L⁻¹]।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "চশমার ক্ষমতা যদি +2 ডায়প্টার হয়, তাহলে লেন্সটি নিচের কোনটি হবে?",
+          options: {
+            a: "অবতল, ফোকাস দূরত্ব 50 cm",
+            b: "উত্তল, ফোকাস দূরত্ব 20 cm",
+            c: "অবতল, ফোকাস দূরত্ব 20 cm",
+            d: "উত্তল, ফোকাস দূরত্ব 50 cm",
+          },
+          correct: "d",
+          explanation:
+            "<p>লেন্সের ক্ষমতা (P) +2 ডায়প্টার, যা ধনাত্মক। ধনাত্মক ক্ষমতা উত্তল লেন্সের জন্য প্রযোজ্য। আমরা জানি P = 1/f, যেখানে f মিটারে প্রকাশিত হয়। সুতরাং, f = 1/P = 1/2 মিটার = 0.5 মিটার। যেহেতু 1 মিটার = 100 সেন্টিমিটার, তাহলে 0.5 মিটার = 50 সেন্টিমিটার। অতএব, লেন্সটি উত্তল এবং এর ফোকাস দূরত্ব 50 cm হবে।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "একটি উত্তল লেন্সের ফোকাস দূরত্ব 25 cm। লেন্স থেকে 25 cm দূরে বস্তু স্থাপন করা হলে বিম্বের দূরত্ব কত হবে?",
+          options: {
+            a: "1 cm",
+            b: "25 cm",
+            c: "625 cm",
+            d: "∞",
+          },
+          correct: "d",
+          explanation:
+            "<p>লেন্সের সমীকরণ হলো 1/v - 1/u = 1/f। এখানে উত্তল লেন্সের ফোকাস দূরত্ব f = +25 cm। বস্তু লেন্স থেকে 25 cm দূরে স্থাপন করা হয়েছে, অর্থাৎ u = -25 cm (চিহ্ন প্রথা অনুসারে)। সমীকরণে মান বসিয়ে পাই: 1/v - 1/(-25) = 1/25। অর্থাৎ, 1/v + 1/25 = 1/25। এর থেকে 1/v = 1/25 - 1/25 = 0। সুতরাং, v = 1/0 = ∞। এর অর্থ হলো, প্রতিবিম্ব অসীম দূরত্বে গঠিত হবে।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "শার্লক হোমস তার ঘটনাস্থল পরীক্ষার জন্য যে লেন্সটি ব্যবহার করতেন তার ফোকাস দূরত্ব 12.5 cm। তিনি একটি নির্দিষ্ট দূরত্বে লেন্সটি রাখলেন এবং সুস্পষ্ট দর্শনের ন্যূনতম দূরত্বে বিবর্ধিত বিম্ব পেলেন। তিনি যন্ত্রের সাহায্যে কতগুণ বিবর্ধন পেলেন?",
+          options: {
+            a: "0.5",
+            b: "1.5",
+            c: "2",
+            d: "3",
+          },
+          correct: "d",
+          explanation:
+            "<p>সুস্পষ্ট দর্শনের ন্যূনতম দূরত্ব (D) সাধারণত 25 cm। সরল অণুবীক্ষণ যন্ত্রের বিবর্ধনের সূত্র হলো M = 1 + D/f। এখানে D = 25 cm এবং f = 12.5 cm। সুতরাং, বিবর্ধন M = 1 + 25/12.5 = 1 + 2 = 3। অতএব, তিনি 3 গুণ বিবর্ধন পেলেন।</p>",
+        },
+        {
+          id: 25,
+          question: "কোন ত্রুটি দূরীকরণে উত্তল লেন্স ব্যবহৃত করা হয়?",
+          options: {
+            a: "ক্ষীণ দৃষ্টি",
+            b: "দূর দৃষ্টি",
+            c: "চালশে",
+            d: "বিষম দৃষ্টি",
+          },
+          correct: "b",
+          explanation:
+            "<p>দূর দৃষ্টি (হাইপারমেট্রোপিয়া) দূরীকরণে উত্তল লেন্স ব্যবহৃত হয়। দূর দৃষ্টিতে কাছের বস্তু ঝাপসা দেখায় কারণ আলোক রশ্মি রেটিনার পেছনে ফোকাস হয়। উত্তল লেন্স এই আলোক রশ্মিগুলোকে অভিসারী করে রেটিনার উপর সঠিকভাবে ফোকাস করতে সাহায্য করে। চালশে (প্রেসবায়োপিয়া) এর জন্যও উত্তল লেন্স ব্যবহার করা হয়, তবে প্রধানত দূরদৃষ্টির জন্য এটি অধিক প্রযোজ্য।</p>",
+        },
+        {
+          id: 26,
+          question: "আলোক কেন্দ্রের অবস্থান কোথায়?",
+          options: {
+            a: "লেন্সের ভিতরে যে কোনো জায়গায়",
+            b: "লেন্সের ভিতরে প্রধান অক্ষের যে অংশ তার মধ্য বিন্দুতে",
+            c: "লেন্সের ভিতরেও হতে পারে আবার বাইরেও হতে পারে",
+            d: "লেন্সের বাইরে",
+          },
+          correct: "c",
+          explanation:
+            "<p>আলোক কেন্দ্র হলো লেন্সের প্রধান অক্ষের উপর অবস্থিত এমন একটি বিন্দু যার মধ্য দিয়ে আপতিত আলোক রশ্মি প্রতিসরণের পর কোনো প্রকার বিচ্যুতি ছাড়াই লেন্স থেকে নির্গত হয়। বেশিরভাগ ক্ষেত্রে, আলোক কেন্দ্র লেন্সের অভ্যন্তরেই থাকে। তবে কিছু বিশেষ আকৃতির লেন্স, যেমন উত্তলাবতল বা অবতলোত্তল লেন্সের ক্ষেত্রে, আলোক কেন্দ্র লেন্সের বাইরেও অবস্থিত হতে পারে। এটি লেন্সের বক্রতার ব্যাসার্ধ এবং উপাদানের প্রতিসরাঙ্কের উপর নির্ভরশীল।</p>",
+        },
+        {
+          id: 27,
+          question: "কোন ক্ষেত্রে, লেন্সের দুই ফোকাস দূরত্বের মান সমান হয়?",
+          options: {
+            a: "লেন্সের দুই পৃষ্ঠের বক্রতার ব্যাসার্ধের মান সমান হলে",
+            b: "চারপাশের মাধ্যম একই থাকলে",
+            c: "লেন্স সরু ও কম উন্মেষের হলে",
+            d: "আলোক কেন্দ্র লেন্সের ভিতরে মধ্য বিন্দুতে থাকলে",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি লেন্সের উভয় পাশে যদি একই মাধ্যম থাকে, তাহলে লেন্সের উভয় দিকের ফোকাস দূরত্বের মান সমান হয়। সাধারণত আমরা ধরে নিই লেন্সটি বায়ু মাধ্যমে স্থাপন করা হয়েছে, যেখানে উভয় পাশের মাধ্যম একই। যদি লেন্সের একপাশে বায়ু এবং অন্যপাশে জল থাকে, তাহলে ফোকাস দূরত্বের মান ভিন্ন হবে।</p>",
+        },
+        {
+          id: 28,
+          question: "উত্তল লেন্সে বাস্তব বস্তুর প্রতিবিম্ব-",
+          options: {
+            a: "সর্বদা বাস্তব",
+            b: "সর্বদা অবাস্তব",
+            c: "কখনও বাস্তব, কখনও অবাস্তব",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>উত্তল লেন্সে বাস্তব বস্তুর প্রতিবিম্ব বস্তুর অবস্থানের উপর নির্ভর করে কখনও বাস্তব আবার কখনও অবাস্তব হতে পারে। যদি বস্তুকে ফোকাস দূরত্ব (f) এর বাইরে রাখা হয় (u > f), তবে বাস্তব ও উল্টা প্রতিবিম্ব গঠিত হয়। আর যদি বস্তুকে ফোকাস দূরত্ব (f) এর মধ্যে রাখা হয় (u < f), তবে অবাস্তব, সোজা ও বিবর্ধিত প্রতিবিম্ব গঠিত হয়।</p>",
+        },
+        {
+          id: 29,
+          question: "অবতল লেন্সে বাস্তব বস্তুর প্রতিবিম্ব-",
+          options: {
+            a: "সর্বদা বাস্তব",
+            b: "সর্বদা অবাস্তব",
+            c: "কখনও বাস্তব কখনও অবাস্তব",
+            d: "কোনোটিই নয়",
+          },
+          correct: "b",
+          explanation:
+            "<p>অবতল লেন্সে একটি বাস্তব বস্তুর প্রতিবিম্ব সর্বদা অবাস্তব, সোজা এবং খর্বিত হয়। বস্তুর অবস্থান যেখানেই হোক না কেন, অবতল লেন্স কখনোই বাস্তব প্রতিবিম্ব তৈরি করে না, কারণ এটি আলোক রশ্মিকে অপসারিত করে। প্রতিবিম্বটি লেন্সের একই পাশে, বস্তু এবং আলোক কেন্দ্রের মধ্যে গঠিত হয়।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "লেন্সের পরিধি বা বেড় সাধারণত বৃত্তাকার থাকে। এ বৃত্তের ব্যাসকে কী বলে?",
+          options: {
+            a: "প্রধান অক্ষ",
+            b: "বক্রতার ব্যাস",
+            c: "ফোকাস দূরত্ব",
+            d: "উন্মেষ",
+          },
+          correct: "d",
+          explanation:
+            "<p>লেন্সের কার্যকরী ব্যাসকে তার উন্মেষ (Aperture) বলে। লেন্সের পরিধি সাধারণত বৃত্তাকার হয়, এবং এই বৃত্তের ব্যাস দ্বারা লেন্সের আলোক সংগ্রহ ক্ষমতা নির্দেশিত হয়। উন্মেষ যত বেশি হয়, লেন্স তত বেশি আলো সংগ্রহ করতে পারে এবং গঠিত প্রতিবিম্ব তত উজ্জ্বল হয়।</p>",
+        },
+        {
+          id: 31,
+          question: "লেন্সের ক্ষেত্রে, সকল দূরত্ব কোথা হতে পরিমাপ করতে হয়?",
+          options: {
+            a: "মেরু",
+            b: "আলোক কেন্দ্র",
+            c: "ফোকাস",
+            d: "প্রধান অক্ষ",
+          },
+          correct: "b",
+          explanation:
+            "<p>লেন্সের ক্ষেত্রে, বস্তুর দূরত্ব, প্রতিবিম্বের দূরত্ব এবং ফোকাস দূরত্ব সহ সকল দূরত্ব আলোক কেন্দ্র (Optical Centre) থেকে পরিমাপ করা হয়। আলোক কেন্দ্র হলো লেন্সের প্রধান অক্ষের উপর অবস্থিত এমন একটি বিন্দু, যার মধ্য দিয়ে আলোক রশ্মি কোনো বিচ্যুতি ছাড়াই চলে যায়। এটি লেন্সের হিসাব-নিকাশে মূলবিন্দু হিসেবে কাজ করে।</p>",
+        },
+        {
+          id: 32,
+          question: "25 cm ফোকাস দূরত্বের একটি অবতল লেন্সের ক্ষমতা কত?",
+          options: {
+            a: "+25D",
+            b: "-25D",
+            c: "-4D",
+            d: "+4D",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবতল লেন্সের ফোকাস দূরত্ব ঋণাত্মক হয়। এখানে f = -25 cm = -0.25 m। লেন্সের ক্ষমতা (P) = 1/f। সুতরাং, P = 1/(-0.25) = -4 ডায়প্টার (D)।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "উত্তল লেন্সের ক্ষেত্রে, বস্তু অসীম দূরত্বে অবস্থিত হলে, প্রতিবিম্ব কোথায় গঠিত হবে?",
+          options: {
+            a: "মেরুতে",
+            b: "বক্রতার কেন্দ্রে",
+            c: "ফোকাস তলে",
+            d: "অসীমে",
+          },
+          correct: "c",
+          explanation:
+            "<p>উত্তল লেন্সের ক্ষেত্রে, যখন কোনো বস্তু অসীম দূরত্বে অবস্থিত থাকে, তখন বস্তু থেকে আগত সমান্তরাল আলোক রশ্মিগুলো লেন্স দ্বারা প্রতিসৃত হয়ে ফোকাস তলে (Focal Plane) মিলিত হয়। এই ফোকাস তলে একটি বাস্তব, উল্টা এবং অত্যন্ত খর্বিত প্রতিবিম্ব গঠিত হয়।</p>",
+        },
+        {
+          id: 34,
+          question:
+            "উত্তল লেন্সের ক্ষেত্রে, বস্তু 2f দূরত্বে অবস্থিত হলে, প্রতিবিম্বের দূরত্ব কত হবে?",
+          options: {
+            a: "f",
+            b: "2f",
+            c: "অসীম",
+            d: "কোনোটিই নয়",
+          },
+          correct: "b",
+          explanation:
+            "<p>উত্তল লেন্সের ক্ষেত্রে, যখন বস্তুকে বক্রতার কেন্দ্রে (2f দূরত্বে) স্থাপন করা হয়, তখন প্রতিবিম্বও লেন্সের অন্য পাশে বক্রতার কেন্দ্রে (2f দূরত্বে) গঠিত হয়। এই প্রতিবিম্ব বাস্তব, উল্টা এবং বস্তুর সমান আকারের হয়।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "প্রতিবিম্ব যদি অবাস্তব এবং বস্তু অপেক্ষা খর্বিত হয়, তবে লেন্সটি",
+          options: {
+            a: "উত্তল",
+            b: "উভোত্তল",
+            c: "অবতল",
+            d: "উভাবতল",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবতল লেন্সই একমাত্র লেন্স যা একটি বাস্তব বস্তুর সর্বদা অবাস্তব, সোজা এবং খর্বিত প্রতিবিম্ব তৈরি করে, বস্তুর অবস্থান যাই হোক না কেন। উত্তল লেন্স অবাস্তব প্রতিবিম্ব তৈরি করলেও সেটি বস্তু অপেক্ষা বিবর্ধিত হয়, খর্বিত নয়।</p>",
+        },
+        {
+          id: 36,
+          question:
+            "একটি f ফোকাসের উত্তল লেন্সের লক্ষ্যবস্তু 2f দূরত্বের বাইরে হলে প্রতিবিম্ব হবে -",
+          options: {
+            a: "অসীম দূরত্ব",
+            b: "ফোকাস বিন্দুতে",
+            c: "f এবং 2f এর মাঝে",
+            d: "2f এর বাইরে",
+          },
+          correct: "c",
+          explanation:
+            "<p>উত্তল লেন্সের ক্ষেত্রে, যখন লক্ষ্যবস্তুকে 2f দূরত্বের বাইরে স্থাপন করা হয় (অর্থাৎ, u > 2f), তখন প্রতিবিম্ব ফোকাস বিন্দু (f) এবং বক্রতার কেন্দ্র (2f) এর মধ্যে গঠিত হয়। এই প্রতিবিম্ব বাস্তব, উল্টা এবং খর্বিত হয়।</p>",
+        },
+        {
+          id: 37,
+          question:
+            "একটি উত্তল লেন্সের ফোকাস দূরত্ব 10 cm। এর প্রধান ছেদ থেকে বাঁদিকে 15 cm দূরে একটি মোমবাতি রাখা আছে। মোমবাতির প্রতিবিম্ব সম্পর্কে নিচের কোনটি সঠিক?",
+          options: {
+            a: "বাস্তব, লেন্সের ডানদিকে বিবর্ধিত, উল্টা",
+            b: "বাস্তব, লেন্সের ডানদিকে, বিবর্ধিত, সিধা",
+            c: "বাস্তব, লেন্সের ডানদিকে, খর্বিত, উল্টা",
+            d: "অবাস্তব, লেন্সের বামদিকে, বিবর্ধিত, সিধা",
+          },
+          correct: "a",
+          explanation:
+            "<p>উত্তল লেন্সের ফোকাস দূরত্ব f = +10 cm। বস্তুর দূরত্ব u = -15 cm (বাঁদিকে)। লেন্সের সূত্র থেকে প্রতিবিম্বের দূরত্ব (v) নির্ণয় করি: 1/v - 1/u = 1/f। 1/v - 1/(-15) = 1/10 => 1/v + 1/15 = 1/10 => 1/v = 1/10 - 1/15 = (3-2)/30 = 1/30। সুতরাং, v = +30 cm। যেহেতু v ধনাত্মক, প্রতিবিম্ব লেন্সের ডানদিকে গঠিত হবে এবং এটি বাস্তব। বিবর্ধন m = v/u = 30/15 = 2। যেহেতু বিবর্ধন 1 এর চেয়ে বড়, প্রতিবিম্ব বিবর্ধিত হবে। বাস্তব প্রতিবিম্ব সর্বদা উল্টা হয়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                <label class="option" data-option="${option}">
+                                <div class="circle">${option}</div>
+                                <span class="option-text">${question.options[option]}</span>
+                                </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                         <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                         <div class="explanation-content">
+                                                                                           <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                           ${question.explanation}
+                                                                                         </div>
+                                                                                       </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                    <p class="question-label">${
+                                                                                      index +
+                                                                                      1
+                                                                                    }. ${
+            question.question
+          }</p>
+                                                                                    <div class="options">
+                                                                                      ${optionsHTML}
+                                                                                    </div>
+                                                                                    ${explanationHTML}
+                                                                                  `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
